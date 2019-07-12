@@ -1,18 +1,8 @@
-# This is a multi-stage build. First we are going to compile and then
-# create a small image for runtime.
-FROM golang:1.11 as builder
+FROM nginx
 
-RUN mkdir -p /go/src/github.com/linuxacademy/content-eks-deepdive-sample-api-service-go
-WORKDIR /go/src/github.com/linuxacademy/content-eks-deepdive-sample-api-service-go
-RUN useradd -u 10001 app
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-FROM scratch
+WORKDIR /usr/share/nginx/html
+COPY site .
 
-COPY --from=builder /go/src/github.com/linuxacademy/content-eks-deepdive-sample-api-service-go/main /main
-COPY --from=builder /etc/passwd /etc/passwd
-USER app
-
-EXPOSE 8080
-CMD ["/main"]
+CMD sed -i -e 's/$PORT/'"$PORT"'/g' /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'
